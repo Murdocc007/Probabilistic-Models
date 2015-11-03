@@ -1,6 +1,15 @@
 from __future__ import division
-from math import log
 import numpy as np
+
+
+
+def countXgivenY(x,y,column,voting_data):
+    rows=voting_data.shape[0]
+    count=0
+    for i in range(rows):
+        if voting_data[i,column]==x and voting_data[i,0]==y:
+           count+=1
+    return count
 
 
 #returns the number of x attributes with the given value and column number,rows are optional
@@ -10,59 +19,28 @@ def getXCountFromColumn(voting_data,colno,value,rows):
     else:
         return (sum(voting_data[rows,colno]==value))
 
-#returns the number of Y's  present with the given value, rows are optional
-def getYCount(value,rows):
-    if rows is None:
-        return sum(voting_data[:,0]==value)
-    else:
-        return sum(voting_data[rows,0]==value)
 
 #get the missing rows for a particular column
 def getMissingRows(voting_data,column):
     return np.where(voting_data[:,column]=='?')
 
-#get the known rows for a particular column
-def rowsknown(voting_data,column):
-    rows=[];
-    unknown_rows=getMissingRows(voting_data,column)
-    for i in range(voting_data.shape[0]):
-        if i not in unknown_rows:
-            rows.append(i)
-    return (rows)
 
 
+def probXGivenYNew(x,y,column,voting_data):
 
-# gives the probability of x given y for a given column
-def probXGivenY(x,y,column,voting_data):
+    countKnownAttributes=voting_data.shape[0]-len(getMissingRows(voting_data,column))
 
-
-    unknown_indices=getMissingRows(voting_data,column)
-    known_indices=rowsknown(voting_data,column)
-
-    #getting indexes in attribute array which has the corresponding lable as y
-    x_row=[]
-    for i in known_indices:
-        if voting_data[i,0]==y:
-            x_row.append(i)
-
-    #probability of x for known indices
-    prob_x=[]
-    prob_x[0]=getXCountFromColumn(voting_data,column,'0',known_indices)/len(known_indices)
-    prob_x[1]=getXCountFromColumn(voting_data,column,'1',known_indices)/len(known_indices)
-
-    probability=0
-    for indices in unknown_indices:
-        for value in ['1','0']:
-             #case where the value of unkown index is equal to x and corresponding y value is equal to given value
-            if value==x and voting_data[indices,0]==y:
-                probability+= ((getXCountFromColumn(voting_data,column,x,x_row)+1)/(len(known_indices)+1))*prob_x[ord(value)]
-            else:
-                probability+=((getXCountFromColumn(voting_data,column,x,x_row))/(len(known_indices)+1))*prob_x[ord(value)]
-
-    return probability
+    return countXgivenY(x,y,column,voting_data)/countKnownAttributes
 
 
+def probXGivenYNew1(row,voting_data,probability,y):
+    result=1
+    for i in range(1,voting_data.shape[1]):
+        if(voting_data[row,i]!='?'):
+            x=ord(voting_data[row,i])-48
+            result=result*probability[i,x,y]
 
+    return result
 
 if __name__ == '__main__':
 
@@ -72,7 +50,31 @@ if __name__ == '__main__':
     for col in range(1,voting_train_data.shape[1]):
         for classifier in ['1','0']:
             for xvalue in ['1','0']:
-                probability[col][ord(classifier)][ord(xvalue)]=probXGivenY(xvalue,classifier,col,voting_train_data)
+                probability[col,ord(xvalue)-48,ord(classifier)-48]=probXGivenYNew(xvalue,classifier,col,voting_train_data)
+
+    probabilityYOne=sum(voting_train_data[:,0]=='1')/voting_train_data.shape[0]
+    probabilityYZero=1-probabilityYOne
+
 
 
     voting_test_data=np.loadtxt('voting_test.data',delimiter=",",dtype=str)
+
+    label=[0 for i in range(voting_test_data.shape[0])]
+    rows=voting_test_data.shape[0]
+    for i in range(rows):
+        if probabilityYOne*probXGivenYNew1(i,voting_test_data,probability,1)>probabilityYZero*probXGivenYNew1(i,voting_test_data,probability,0):
+            label[i]='1'
+        else:
+            label[i]='0'
+
+    count=0
+    for i in range(voting_test_data.shape[0]):
+        if label[i]==voting_test_data[i,0]:
+           count+=1
+
+    print "Accuracy="+str((count/voting_test_data.shape[0])*100)
+
+
+
+
+
