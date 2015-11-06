@@ -44,7 +44,7 @@ def probXGivenYNew1(row,voting_data,probability,y):
 
 if __name__ == '__main__':
 
-    voting_train_data=np.loadtxt('voting_train.data',delimiter=",",dtype=str)
+    voting_train_data=np.loadtxt('mean_train.data',delimiter=",",dtype=str)
 
     probability=np.zeros(((voting_train_data.shape[1],2,2)))
     for col in range(1,voting_train_data.shape[1]):
@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
 
 
-    voting_test_data=np.loadtxt('voting_test.data',delimiter=",",dtype=str)
+    voting_test_data=np.loadtxt('ignore_test.data',delimiter=",",dtype=str)
 
     label=[0 for i in range(voting_test_data.shape[0])]
     rows=voting_test_data.shape[0]
